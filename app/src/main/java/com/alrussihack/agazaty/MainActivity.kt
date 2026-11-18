@@ -18,12 +18,28 @@ import androidx.lifecycle.lifecycleScope
 import com.alrussihack.agazaty.data.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import org.json.JSONObject
 
 private val cream=Color(0xFFFFF8F1); private val orange=Color(0xFFC83D08); private val ink=Color(0xFF302015); private val muted=Color(0xFF795F4C); private val line=Color(0xFFF3E0D0)
 class MainActivity:ComponentActivity(){
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);val db=AgazatyDb.get(this)
- lifecycleScope.launch{if(db.dao().employeeCount()==0)listOf(Employee(486,"Mohand Ahmed Abdelhalim","Life Guard"),Employee(923,"Ahmed Hamada Helmy Hussein","Life Guard"),Employee(1041,"Ayman Ahmed Mohamed Gad","Life Guard"),Employee(2603,"Alaa Mohamed Elmargany","Pool Technician"),Employee(1663,"Mena fawzy","Tennis Coach"),Employee(3831,"Mostafa Nour","Tennis Coach"),Employee(4198,"Ahmed Medhat","Life Guard"),Employee(707,"Shaaban Fawzy Ramadan Abdel","Life Guard"),Employee(1799,"Mohamed Adel Abdelmoneim","Life Guard"),Employee(1500,"Ahmed Saleem Hassan Mohamed","Life Guard"),Employee(2066,"Mahmoud Khaled Ali","Life Guard"),Employee(2306,"Mohamed Mohamed Mohamed","Life Guard"),Employee(3983,"Waled Mohamed Mohamed","Life Guard"),Employee(3872,"Abdallah Mansor Zaki","Life Guard"),Employee(4743,"Abdulrhman Ashraf","Life Guard"),Employee(1296,"Alaa El Deen Kamal","Pool Attendant"),Employee(3267,"Abdelmonam Ebrahim","Pool Technician"),Employee(4008,"Ahmed Lotfy","Pool Technician"),Employee(696,"Mohamed Ahmed","Senior Supervisor"),Employee(3049,"Abdel Hamid El Taweel","Supervisor"),Employee(2604,"Mahmoud Mostafa","Supervisor")).forEach{db.dao().insertEmployee(it)}}
+ lifecycleScope.launch { seedDatabase(db) }
  setContent{val es by db.dao().employees().collectAsStateWithLifecycle(emptyList());val ls by db.dao().leaves().collectAsStateWithLifecycle(emptyList());AgazatyUI(es,ls,{e->lifecycleScope.launch{db.dao().insertEmployee(e)}},{c,s,r,n->lifecycleScope.launch{db.dao().employee(c)?.let{db.dao().insertLeave(LeaveRecord(employeeCode=c,employeeName=it.name,job=it.job,startDate=s,returnDate=r,notes=n))}}})}
+ }
+ private suspend fun seedDatabase(db:AgazatyDb) {
+  val data=JSONObject(assets.open("seed.json").bufferedReader().use{it.readText()})
+  val employees=data.getJSONArray("employees")
+  for(i in 0 until employees.length()) {
+   val e=employees.getJSONObject(i)
+   db.dao().insertEmployee(Employee(e.getInt("code"),e.getString("name"),e.getString("job")))
+  }
+  if(db.dao().leaveCount()==0) {
+   val leaves=data.getJSONArray("leaves")
+   for(i in 0 until leaves.length()) {
+    val l=leaves.getJSONObject(i)
+    db.dao().insertLeave(LeaveRecord(employeeCode=l.getInt("code"),employeeName=l.getString("name"),job=l.getString("job"),startDate=l.getString("start"),returnDate=l.getString("returnDate")))
+   }
+  }
  }
 }
 @Composable fun AgazatyUI(es:List<Employee>,ls:List<LeaveRecord>,addE:(Employee)->Unit,addL:(Int,String,String,String)->Unit){
