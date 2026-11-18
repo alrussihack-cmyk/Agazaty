@@ -18,13 +18,14 @@ import androidx.lifecycle.lifecycleScope
 import com.alrussihack.agazaty.data.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.json.JSONObject
 
 private val cream=Color(0xFFFFF8F1); private val orange=Color(0xFFC83D08); private val ink=Color(0xFF302015); private val muted=Color(0xFF795F4C); private val line=Color(0xFFF3E0D0)
 class MainActivity:ComponentActivity(){
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);val db=AgazatyDb.get(this)
  lifecycleScope.launch { seedDatabase(db) }
- setContent{val es by db.dao().employees().collectAsStateWithLifecycle(emptyList());val ls by db.dao().leaves().collectAsStateWithLifecycle(emptyList());AgazatyUI(es,ls,{e->lifecycleScope.launch{db.dao().insertEmployee(e)}},{c,s,r,n->lifecycleScope.launch{db.dao().employee(c)?.let{db.dao().insertLeave(LeaveRecord(employeeCode=c,employeeName=it.name,job=it.job,startDate=s,returnDate=r,notes=n))}}})}
+ setContent{val es by db.dao().employees().collectAsStateWithLifecycle(emptyList());val ls by db.dao().leaves().collectAsStateWithLifecycle(emptyList());val ass by db.dao().assignments().collectAsStateWithLifecycle(emptyList());AgazatyUI(es,ls,ass,{e->lifecycleScope.launch{db.dao().insertEmployee(e)}},{c,s,r,n->lifecycleScope.launch{db.dao().employee(c)?.let{db.dao().insertLeave(LeaveRecord(employeeCode=c,employeeName=it.name,job=it.job,startDate=s,returnDate=r,notes=n))}}},{a->lifecycleScope.launch{db.dao().insertAssignment(a)}},{a->lifecycleScope.launch{db.dao().deleteAssignment(a)}})}
  }
  private suspend fun seedDatabase(db:AgazatyDb) {
   val data=JSONObject(assets.open("seed.json").bufferedReader().use{it.readText()})
@@ -42,7 +43,7 @@ class MainActivity:ComponentActivity(){
   }
  }
 }
-@Composable fun AgazatyUI(es:List<Employee>,ls:List<LeaveRecord>,addE:(Employee)->Unit,addL:(Int,String,String,String)->Unit){
+@Composable fun AgazatyUI(es:List<Employee>,ls:List<LeaveRecord>,assignments:List<ShiftAssignment>,addE:(Employee)->Unit,addL:(Int,String,String,String)->Unit,addA:(ShiftAssignment)->Unit,removeA:(ShiftAssignment)->Unit){
  var tab by remember{mutableIntStateOf(0)};var query by remember{mutableStateOf("")};var addEmp by remember{mutableStateOf(false)};var addLeave by remember{mutableStateOf(false)}
  CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl){
  MaterialTheme(colorScheme=lightColorScheme(primary=orange,background=cream,surface=Color.White,onSurface=ink)){
@@ -55,7 +56,7 @@ class MainActivity:ComponentActivity(){
  Row(Modifier.padding(top=12.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)){Metric("الموظفون",es.size,Modifier.weight(1f));Metric("سجلات الإجازات",ls.size,Modifier.weight(1f))}
  Text("أقرب العائدين",Modifier.padding(top=18.dp,bottom=8.dp),fontSize=20.sp,fontWeight=FontWeight.Bold,color=ink)
  LazyColumn{items(ls.take(8)){LeaveItem(it)}}
- }else if(tab==2){listOf("الرئيسي" to 5,"بلوبلانت" to 7,"العائلي" to 4,"كافكاس" to 2,"بول بار" to 2,"ريلاكس" to 1).forEach{Metric(it.first,it.second,Modifier.fillMaxWidth().padding(bottom=8.dp))};Text("ملخص المناطق التشغيلية. إسناد الأفراد للشيفتات قيد التطوير.",color=muted)}
+ }else if(tab==2){ShiftPlanner(es,ls,assignments,addA,removeA)}
  else {OutlinedTextField(query,{query=it},Modifier.fillMaxWidth().padding(bottom=12.dp),placeholder={Text("ابحث بالاسم أو الكود")},singleLine=true)
  if(tab==3){LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)){items(es.filter{it.name.contains(query,true)||it.code.toString().contains(query)||it.job.contains(query,true)}){EmployeeItem(it)}}}
  else{LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)){items(ls.filter{it.employeeName.contains(query,true)||it.employeeCode.toString().contains(query)}){LeaveItem(it)}}}}
@@ -70,3 +71,51 @@ class MainActivity:ComponentActivity(){
 @Composable fun LeaveItem(l:LeaveRecord){Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(18.dp),border=BorderStroke(1.dp,line)){Column(Modifier.padding(15.dp)){Text(l.employeeName,fontWeight=FontWeight.Bold,color=ink);Text(l.job+" · "+l.startDate+" ← "+l.returnDate,color=muted,fontSize=13.sp)}}}
 @Composable fun EmployeeForm(save:(Employee)->Unit,close:()->Unit){var c by remember{mutableStateOf("")};var n by remember{mutableStateOf("")};var j by remember{mutableStateOf("Life Guard")};AlertDialog(onDismissRequest=close,title={Text("إضافة موظف")},text={Column{OutlinedTextField(c,{c=it},label={Text("الكود")});OutlinedTextField(n,{n=it},label={Text("الاسم")});OutlinedTextField(j,{j=it},label={Text("الوظيفة")})}},confirmButton={TextButton(onClick={c.toIntOrNull()?.let{save(Employee(it,n,j));close()}},enabled=c.toIntOrNull()!=null&&n.isNotBlank()){Text("حفظ")}},dismissButton={TextButton(onClick=close){Text("إلغاء")}})}
 @Composable fun LeaveForm(es:List<Employee>,save:(Int,String,String,String)->Unit,close:()->Unit){var c by remember{mutableStateOf("")};var s by remember{mutableStateOf(LocalDate.now().toString())};var r by remember{mutableStateOf(LocalDate.now().plusDays(10).toString())};var n by remember{mutableStateOf("")};AlertDialog(onDismissRequest=close,title={Text("إضافة إجازة")},text={Column{OutlinedTextField(c,{c=it},label={Text("كود الموظف")});es.find{it.code.toString()==c}?.let{Text(it.name,color=orange)};OutlinedTextField(s,{s=it},label={Text("البداية YYYY-MM-DD")});OutlinedTextField(r,{r=it},label={Text("العودة YYYY-MM-DD")});OutlinedTextField(n,{n=it},label={Text("ملاحظات")})}},confirmButton={TextButton(onClick={c.toIntOrNull()?.let{save(it,s,r,n);close()}},enabled=es.any{it.code.toString()==c}){Text("حفظ")}},dismissButton={TextButton(onClick=close){Text("إلغاء")}})}
+
+@Composable fun ShiftPlanner(es:List<Employee>,ls:List<LeaveRecord>,all:List<ShiftAssignment>,save:(ShiftAssignment)->Unit,remove:(ShiftAssignment)->Unit){
+ var shift by remember{mutableIntStateOf(0)}
+ var area by remember{mutableStateOf("Tirana Main Pool")}
+ var code by remember{mutableStateOf("")}
+ val today=LocalDate.now()
+ val first=today.withDayOfMonth(1)
+ val starts=listOf(first,first.withDayOfMonth(11),first.withDayOfMonth(21))
+ val ends=listOf(first.withDayOfMonth(10),first.withDayOfMonth(20),first.withDayOfMonth(first.lengthOfMonth()))
+ val start=starts[shift]; val end=ends[shift]
+ val startText=start.toString(); val endText=end.toString()
+ val current=all.filter{it.shiftStart==startText}
+ val emp=es.find{it.code.toString()==code}
+ val onLeave=emp!=null && ls.any{it.employeeCode==emp.code && runCatching{!LocalDate.parse(it.startDate).isAfter(end)&&!LocalDate.parse(it.returnDate).isBefore(start)}.getOrDefault(false)}
+ val duplicate=emp!=null && current.any{it.employeeCode==emp.code}
+ val areas=listOf("Kafkas Pool","Pool Bar","Tirana Main Pool","Tirana Family Pool","Blue Planet Pool","Relax Pool","Technician")
+ Column(Modifier.fillMaxSize()){
+  Text("خطة الشهر · ${today.monthValue}/${today.year}",color=muted)
+  Row(Modifier.fillMaxWidth().padding(vertical=10.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+   listOf("1–10","11–20","21–آخر الشهر").forEachIndexed{i,label->FilterChip(selected=shift==i,onClick={shift=i},label={Text(label)})}
+  }
+  Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(18.dp),border=BorderStroke(1.dp,line)){
+   Column(Modifier.padding(14.dp)){
+    Text("الشيفت ${shift+1}",fontWeight=FontWeight.Bold,color=ink,fontSize=18.sp)
+    Text("${start.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))} ← ${end.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))}",color=muted)
+    Text("عدد الموظفين الموزعين: ${current.size}",color=orange,fontWeight=FontWeight.Bold)
+   }
+  }
+  Spacer(Modifier.height(12.dp))
+  Text("إضافة موظف إلى منطقة",fontWeight=FontWeight.Bold,color=ink)
+  OutlinedTextField(area,{area=it},Modifier.fillMaxWidth(),label={Text("المنطقة")},singleLine=true)
+  OutlinedTextField(code,{code=it},Modifier.fillMaxWidth(),label={Text("كود الموظف")},singleLine=true)
+  emp?.let{Text("${it.name} · ${it.job}",color=orange)}
+  if(onLeave) Text("تحذير: الموظف لديه إجازة تتداخل مع هذا الشيفت",color=orange)
+  if(duplicate) Text("هذا الموظف مضاف بالفعل إلى الشيفت",color=orange)
+  Button(onClick={emp?.let{save(ShiftAssignment(shiftStart=startText,shiftEnd=endText,area=area,employeeCode=it.code,employeeName=it.name));code=""}},enabled=emp!=null&&area.isNotBlank()&&!onLeave&&!duplicate,modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=orange)){Text("إسناد الموظف")}
+  Spacer(Modifier.height(12.dp))
+  Text("الموظفون المسندون",fontWeight=FontWeight.Bold,color=ink)
+  LazyColumn(verticalArrangement=Arrangement.spacedBy(7.dp),contentPadding=PaddingValues(bottom=12.dp)){
+   items(current){a->Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(14.dp),border=BorderStroke(1.dp,line)){
+    Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){
+     Column(Modifier.weight(1f)){Text(a.employeeName,fontWeight=FontWeight.Bold,color=ink);Text("${a.area} · ${a.employeeCode}",fontSize=12.sp,color=muted)}
+     TextButton(onClick={remove(a)}){Text("حذف",color=orange)}
+    }
+   }}
+  }
+ }
+}
