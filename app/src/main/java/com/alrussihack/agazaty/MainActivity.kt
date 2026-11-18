@@ -32,7 +32,8 @@ class MainActivity:ComponentActivity(){
   val employees=data.getJSONArray("employees")
   for(i in 0 until employees.length()) {
    val e=employees.getJSONObject(i)
-   db.dao().insertEmployee(Employee(e.getInt("code"),e.getString("name"),e.getString("job")))
+   val code=e.getInt("code")
+   if(db.dao().employee(code)==null) db.dao().insertEmployee(Employee(code,e.getString("name"),e.getString("job")))
   }
   if(db.dao().leaveCount()==0) {
    val leaves=data.getJSONArray("leaves")
@@ -86,6 +87,10 @@ class MainActivity:ComponentActivity(){
  val emp=es.find{it.code.toString()==code}
  val onLeave=emp!=null && ls.any{it.employeeCode==emp.code && runCatching{!LocalDate.parse(it.startDate).isAfter(end)&&!LocalDate.parse(it.returnDate).isBefore(start)}.getOrDefault(false)}
  val duplicate=emp!=null && current.any{it.employeeCode==emp.code}
+ val limits=mapOf("Kafkas Pool" to 2,"Pool Bar" to 2,"Tirana Main Pool" to 9,"Tirana Family Pool" to 5,"Blue Planet Pool" to 10,"Relax Pool" to 1,"Technician" to 4)
+ val capacity=limits[area]
+ val areaCount=current.count{it.area.equals(area,true)}
+ val full=capacity!=null && areaCount>=capacity
  val areas=listOf("Kafkas Pool","Pool Bar","Tirana Main Pool","Tirana Family Pool","Blue Planet Pool","Relax Pool","Technician")
  Column(Modifier.fillMaxSize()){
   Text("خطة الشهر · ${today.monthValue}/${today.year}",color=muted)
@@ -106,7 +111,8 @@ class MainActivity:ComponentActivity(){
   emp?.let{Text("${it.name} · ${it.job}",color=orange)}
   if(onLeave) Text("تحذير: الموظف لديه إجازة تتداخل مع هذا الشيفت",color=orange)
   if(duplicate) Text("هذا الموظف مضاف بالفعل إلى الشيفت",color=orange)
-  Button(onClick={emp?.let{save(ShiftAssignment(shiftStart=startText,shiftEnd=endText,area=area,employeeCode=it.code,employeeName=it.name));code=""}},enabled=emp!=null&&area.isNotBlank()&&!onLeave&&!duplicate,modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=orange)){Text("إسناد الموظف")}
+  if(full) Text("اكتمل العدد المطلوب لهذه المنطقة ($capacity)",color=orange)
+  Button(onClick={emp?.let{save(ShiftAssignment(shiftStart=startText,shiftEnd=endText,area=area,employeeCode=it.code,employeeName=it.name));code=""}},enabled=emp!=null&&area.isNotBlank()&&!onLeave&&!duplicate&&!full,modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=orange)){Text("إسناد الموظف")}
   Spacer(Modifier.height(12.dp))
   Text("الموظفون المسندون",fontWeight=FontWeight.Bold,color=ink)
   LazyColumn(verticalArrangement=Arrangement.spacedBy(7.dp),contentPadding=PaddingValues(bottom=12.dp)){
