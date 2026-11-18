@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
  @Insert(onConflict=OnConflictStrategy.REPLACE) suspend fun insertEmployee(e:Employee)
  @Insert suspend fun insertLeave(l:LeaveRecord)
  @Query("SELECT COUNT(*) FROM employees") suspend fun employeeCount():Int
+ @Query("SELECT COUNT(*) FROM leaves") suspend fun leaveCount():Int
 }
 @Database(entities=[Employee::class,LeaveRecord::class],version=1,exportSchema=false)
 abstract class AgazatyDb:RoomDatabase(){
