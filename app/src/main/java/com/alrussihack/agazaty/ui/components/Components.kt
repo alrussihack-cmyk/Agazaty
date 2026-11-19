@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alrussihack.agazaty.domain.LeaveStatus
+import com.alrussihack.agazaty.domain.daysAgoText
 import com.alrussihack.agazaty.ui.theme.Agz
 import com.alrussihack.agazaty.ui.theme.AgzShape
 import com.alrussihack.agazaty.ui.theme.AgzType
@@ -81,14 +82,6 @@ fun Badge(text: String, bg: Color, fg: Color, modifier: Modifier = Modifier) {
     Box(modifier.clip(AgzShape.Pill).background(bg).padding(horizontal = 11.dp, vertical = 4.dp)) {
         Text(text, style = AgzType.Badge.copy(color = fg), maxLines = 1)
     }
-}
-
-fun daysAgoText(n: Int): String = when (n) {
-    0 -> "اليوم"
-    1 -> "أمس"
-    2 -> "منذ يومين"
-    in 3..10 -> "منذ $n أيام"
-    else -> "منذ $n يومًا"
 }
 
 @Composable
@@ -245,6 +238,23 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) { Text(text, style = AgzType.Button) }
+}
+
+@Composable
+fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    Box(
+        modifier.fillMaxWidth().height(50.dp).clip(AgzShape.Button).background(Agz.Surface)
+            .border(1.dp, if (enabled) Agz.Primary else Agz.Border, AgzShape.Button)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) { Text(text, style = AgzType.Button.copy(color = if (enabled) Agz.Primary else Agz.Muted)) }
+}
+
+@Composable
+fun NoticeCard(text: String, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().clip(AgzShape.Card).background(Agz.Pale).padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Text(text, style = AgzType.BodyStrong.copy(color = Agz.PrimaryDark))
+    }
 }
 
 @Composable

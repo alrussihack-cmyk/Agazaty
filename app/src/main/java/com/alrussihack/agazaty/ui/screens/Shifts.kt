@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -31,7 +33,8 @@ fun ShiftsScreen(
     shiftIndex: Int,
     onShift: (Int) -> Unit,
     onAssign: () -> Unit,
-    onOpenArea: (Area) -> Unit
+    onOpenArea: (Area) -> Unit,
+    onExport: () -> Unit
 ) {
     val shifts = shiftsOf(month)
     val shift = shifts[shiftIndex]
@@ -44,7 +47,12 @@ fun ShiftsScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
-            ScreenHeader("توزيع الشيفتات", eyebrow = "الخطة السنوية") { MonthChip(month, onMonth) }
+            ScreenHeader("توزيع الشيفتات", eyebrow = "الخطة السنوية") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    MonthChip(month, onMonth)
+                    IconAction(Icons.Outlined.FileDownload, "تصدير إلى Excel", onExport)
+                }
+            }
         }
         item {
             Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

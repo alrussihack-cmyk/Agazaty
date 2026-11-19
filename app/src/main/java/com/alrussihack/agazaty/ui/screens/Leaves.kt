@@ -3,6 +3,8 @@ package com.alrussihack.agazaty.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -65,7 +67,8 @@ fun LeavesScreen(
     onQuery: (String) -> Unit,
     filter: Int,
     onFilter: (Int) -> Unit,
-    onOpen: (LeaveRecord) -> Unit
+    onOpen: (LeaveRecord) -> Unit,
+    onExport: () -> Unit
 ) {
     val shown = leaves.filter { l ->
         val q = query.trim()
@@ -83,7 +86,12 @@ fun LeavesScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
-            ScreenHeader("سجل الإجازات") { Text("${leaves.size} سجل", style = AgzType.Body) }
+            ScreenHeader("سجل الإجازات") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("${leaves.size} سجل", style = AgzType.Body)
+                    IconAction(Icons.Outlined.FileDownload, "تصدير إلى Excel", onExport)
+                }
+            }
         }
         item { SearchField(query, onQuery, "ابحث بالاسم أو الكود") }
         item {

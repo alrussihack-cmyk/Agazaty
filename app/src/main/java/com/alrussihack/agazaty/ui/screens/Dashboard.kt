@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,7 +25,7 @@ import com.alrussihack.agazaty.ui.theme.*
 import java.time.LocalDate
 
 @Composable
-fun DashboardScreen(stats: DashboardStats, today: LocalDate, onSearch: () -> Unit, onOpenLeave: (LeaveRecord) -> Unit) {
+fun DashboardScreen(stats: DashboardStats, today: LocalDate, onSearch: () -> Unit, onOpenLeave: (LeaveRecord) -> Unit, onExport: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp),
@@ -32,7 +33,10 @@ fun DashboardScreen(stats: DashboardStats, today: LocalDate, onSearch: () -> Uni
     ) {
         item {
             ScreenHeader(title = "لوحة الإجازات", eyebrow = fullDateLabel(today), centerTrailing = false) {
-                IconAction(Icons.Outlined.Search, "بحث في الإجازات", onSearch)
+                Row {
+                    IconAction(Icons.Outlined.Search, "بحث في الإجازات", onSearch)
+                    IconAction(Icons.Outlined.FileDownload, "تصدير إلى Excel", onExport)
+                }
             }
         }
         item { HeroCard(stats) }

@@ -35,7 +35,7 @@ class AgazatyViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteLeave(l: LeaveRecord) { viewModelScope.launch { dao.deleteLeave(l) } }
-    fun assign(a: ShiftAssignment) { viewModelScope.launch { dao.insertAssignment(a) } }
+    fun assignAll(list: List<ShiftAssignment>) { viewModelScope.launch { dao.insertAssignments(list) } }
     fun unassign(a: ShiftAssignment) { viewModelScope.launch { dao.deleteAssignment(a) } }
 
     /** First run: import the bundled workbook data. Leaves whose return date has passed are recorded as returned. */

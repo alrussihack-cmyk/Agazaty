@@ -44,6 +44,14 @@ fun parseDisplayDate(s: String): String? = runCatching {
     LocalDate.of(y, m, d).toString()
 }.getOrNull()
 
+fun daysAgoText(n: Int): String = when (n) {
+    0 -> "اليوم"
+    1 -> "أمس"
+    2 -> "منذ يومين"
+    in 3..10 -> "منذ $n أيام"
+    else -> "منذ $n يومًا"
+}
+
 sealed interface LeaveStatus {
     data object OnLeave : LeaveStatus
     data object Upcoming : LeaveStatus

@@ -50,6 +50,7 @@ interface AgazatyDao {
     @Update suspend fun updateLeave(l: LeaveRecord)
     @Delete suspend fun deleteLeave(l: LeaveRecord)
     @Insert suspend fun insertAssignment(a: ShiftAssignment)
+    @Insert suspend fun insertAssignments(list: List<ShiftAssignment>)
     @Delete suspend fun deleteAssignment(a: ShiftAssignment)
 }
 

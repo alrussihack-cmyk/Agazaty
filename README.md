@@ -25,6 +25,8 @@ Typeface: **Cairo** (SIL OFL, bundled in `res/font`, weights 400–900). Layout 
 4. **الموظفون** – search, filters with counts (الكل / Life Guard / فنيو الحمامات), add employee from the ＋ button.
 5. **ملف الموظف** – stats, leave history, add leave for this employee.
 6. **توزيع الشيفتات** – month chip, three 10-day shifts, six area cards, total, assign form, tap an area to see/remove members.
+   - Tapping the name field lists **every employee** with checkboxes; tick several and save them to the chosen area and shift in one go. Employees on overlapping leave, already placed in the shift, or beyond the area's remaining capacity are shown dimmed with the reason.
+7. **تصدير إلى Excel** (download icon on the dashboard, leave log and shifts screens) – choose shifts / leaves / returns; one coloured `.xlsx` is created with a sheet per choice (RTL, frozen header, filters, real dates, app colours, status cells coloured like the badges). Save it to Downloads (Android 10+) or share it.
 
 ## Behaviour
 - Offline-first Room database (version 3). First run imports the 47 employees and 27 leaves from `seed.json`.

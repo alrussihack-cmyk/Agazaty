@@ -17,6 +17,7 @@ import com.alrussihack.agazaty.AgazatyViewModel
 import com.alrussihack.agazaty.data.Employee
 import com.alrussihack.agazaty.data.LeaveRecord
 import com.alrussihack.agazaty.domain.*
+import com.alrussihack.agazaty.export.ExportKind
 import com.alrussihack.agazaty.ui.components.AgzBottomBar
 import com.alrussihack.agazaty.ui.screens.*
 import com.alrussihack.agazaty.ui.theme.Agz
@@ -28,6 +29,7 @@ private sealed interface Overlay {
     data object NewEmployee : Overlay
     data class Assign(val area: Area?) : Overlay
     data class AreaInfo(val area: Area) : Overlay
+    data class Export(val kinds: Set<ExportKind>) : Overlay
 }
 
 private val ADD_LABELS = listOf("إضافة إجازة", "إضافة إجازة", "توزيع موظف على منطقة", "إضافة موظف")
@@ -73,11 +75,16 @@ fun AgazatyApp(vm: AgazatyViewModel) {
                 Box(Modifier.weight(1f).statusBarsPadding()) {
                     Crossfade(targetState = tab, label = "tab") { t ->
                         when (t) {
-                            0 -> DashboardScreen(stats, today, onSearch = { tab = 1 }, onOpenLeave = { overlay = Overlay.Leave(it, null) })
-                            1 -> LeavesScreen(leaves, today, leaveQuery, { leaveQuery = it }, leaveFilter, { leaveFilter = it }, onOpen = { overlay = Overlay.Leave(it, null) })
+                            0 -> DashboardScreen(
+                                stats, today, onSearch = { tab = 1 }, onOpenLeave = { overlay = Overlay.Leave(it, null) },
+                                onExport = { overlay = Overlay.Export(ExportKind.entries.toSet()) }
+                            )
+                            1 -> LeavesScreen(leaves, today, leaveQuery, { leaveQuery = it }, leaveFilter, { leaveFilter = it }, onOpen = { overlay = Overlay.Leave(it, null) },
+                                onExport = { overlay = Overlay.Export(setOf(ExportKind.Leaves, ExportKind.Returns)) })
                             2 -> ShiftsScreen(
                                 assignments, month, { monthKey = it.toString() }, shiftIdx, { shiftIdx = it },
-                                onAssign = { overlay = Overlay.Assign(null) }, onOpenArea = { overlay = Overlay.AreaInfo(it) }
+                                onAssign = { overlay = Overlay.Assign(null) }, onOpenArea = { overlay = Overlay.AreaInfo(it) },
+                                onExport = { overlay = Overlay.Export(setOf(ExportKind.Shifts)) }
                             )
                             else -> EmployeesScreen(employees, leaves, today, empQuery, { empQuery = it }, empFilter, { empFilter = it }, onOpen = { profileCode = it.code })
                         }
@@ -112,7 +119,8 @@ fun AgazatyApp(vm: AgazatyViewModel) {
                         onClose = close
                     )
                     Overlay.NewEmployee -> EmployeeForm(employees.map { it.code }.toSet(), { vm.addEmployee(it) }, close)
-                    is Overlay.Assign -> AssignForm(employees, leaves, assignments, month, shiftIdx, o.area, { vm.assign(it) }, close)
+                    is Overlay.Assign -> AssignForm(employees, leaves, assignments, month, shiftIdx, o.area, { vm.assignAll(it) }, close)
+                    is Overlay.Export -> ExportForm(employees, leaves, assignments, month, o.kinds, close)
                     is Overlay.AreaInfo -> {
                         val shift = shiftsOf(month)[shiftIdx]
                         AreaDetail(
