@@ -6,7 +6,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,3 +38,15 @@ jobs:
           name: agazaty-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+      - name: Publish APK as a downloadable release
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk Agazaty.apk
+          if gh release view debug-latest >/dev/null 2>&1; then
+            gh release delete debug-latest --cleanup-tag --yes
+          fi
+          gh release create debug-latest Agazaty.apk --prerelease --target "$TARGET" \
+            --title "Agazaty debug build" --notes "Latest debug APK built by CI (commit $TARGET). Download Agazaty.apk and install it."
